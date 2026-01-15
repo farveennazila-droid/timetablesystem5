@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Request Change</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .btn-submit {
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-submit:hover {
+            background: #229954;
+        }
+        .message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        .form-section {
+            background: white;
+            padding: 30px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+        .form-section h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .form-section p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .btn-back {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 20px;
+        }
+        .btn-back:hover {
+            background: #2980b9;
+        }
+        .request-list {
+            background: white;
+            padding: 30px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 900px;
+        }
+        .request-list h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table thead {
+            background: #34495e;
+            color: white;
+        }
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table tbody tr:hover {
+            background: #f4f6f8;
+        }
+        .status-pending {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .status-approved {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-rejected {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Admin</h2>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/manage-faculty">Faculty</a>
+    <a href="/manage-subject">Subjects</a>
+    <a href="/manage-classroom">Rooms</a>
+    <a href="/change-request-form" style="color: #3498db;">Request Change</a>
+    <a href="#" onclick="logout(); return false;">Logout</a>
+</div>
+
+<div class="main">
+    <a href="/faculty-dashboard" class="btn-back">← Back to Dashboard</a>
+
+    <div class="form-section">
+        <h2>Submit Change Request</h2>
+        <p>Submit a request to change the timetable schedule. Your request will be reviewed by the administration.</p>
+        
+        <div id="message" class="message"></div>
+
+        <form onsubmit="submitChangeRequest(event)">
+            <div class="form-group">
+                <label>Timetable ID:</label>
+                <input type="number" id="timetable-id" placeholder="Enter the timetable ID to modify" required>
+            </div>
+
+            <div class="form-group">
+                <label>Reason for Change:</label>
+                <textarea id="reason" placeholder="Explain why this change is needed..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Request</button>
+        </form>
+    </div>
+
+    <div class="request-list">
+        <h2>My Change Requests</h2>
+        <table id="request-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timetable ID</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Date Submitted</th>
+                </tr>
+            </thead>
+            <tbody id="request-list">
+                <tr><td colspan="5">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Load change requests on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadChangeRequests();
+});
+
+function submitChangeRequest(event) {
+    event.preventDefault();
+
+    const timetable_id = document.getElementById('timetable-id').value.trim();
+    const reason = document.getElementById('reason').value.trim();
+
+    // Validate fields
+    if (!timetable_id || !reason) {
+        const msgDiv = document.getElementById('message');
+        msgDiv.textContent = '✗ Error: All fields must be filled';
+        msgDiv.className = 'message error';
+        return;
+    }
+
+    fetch('/change-request', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            timetable_id: parseInt(timetable_id),
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const msgDiv = document.getElementById('message');
+        if (data.status && (data.status === 'Change request submitted' || data.status.includes('submitted'))) {
+            msgDiv.textContent = '✓ Change request submitted successfully!';
+            msgDiv.className = 'message success';
+            document.getElementById('timetable-id').value = '';
+            document.getElementById('reason').value = '';
+            loadChangeRequests();
+        } else {
+            msgDiv.textContent = '✗ Error: ' + (data.message || 'Failed to submit request');
+            msgDiv.className = 'message error';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const msgDiv = document.getElementById('message');
+        msgDiv.textContent = '✗ Error submitting request: ' + error.message;
+        msgDiv.className = 'message error';
+    });
+}
+
+function loadChangeRequests() {
+    fetch('/change-requests')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('request-list');
+            tbody.innerHTML = '';
+            
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(request => {
+                    const id = request[0];
+                    const timetable_id = request[1];
+                    const reason = request[2];
+                    const status = request[3] || 'Pending';
+                    const date = request[4] || '-';
+                    
+                    // Format status with color
+                    let statusClass = 'status-pending';
+                    if (status.toLowerCase() === 'approved') statusClass = 'status-approved';
+                    else if (status.toLowerCase() === 'rejected') statusClass = 'status-rejected';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${id}</td>
+                            <td>${timetable_id}</td>
+                            <td>${reason}</td>
+                            <td><span class="${statusClass}">${status}</span></td>
+                            <td>${date}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5">No change requests yet</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('request-list').innerHTML = '<tr><td colspan="5">Error loading requests</td></tr>';
+        });
+}
+
+function logout() {
+    window.location.href = "/";
+}
+</script>
+
+</body>
+</html>

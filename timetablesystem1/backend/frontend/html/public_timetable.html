@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Class Timetable</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .notifications {
+            margin-bottom: 30px;
+        }
+        
+        .notification-item {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .notification-item.new {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        
+        .notification-item.important {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .notification-header {
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 5px;
+        }
+        
+        .notification-item.new .notification-header {
+            color: #ff6f00;
+        }
+        
+        .notification-item.important .notification-header {
+            color: #c41c3b;
+        }
+        
+        .notification-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .timetable {
+            margin-top: 30px;
+        }
+        
+        .timetable h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .schedule-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .schedule-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        
+        .schedule-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .schedule-table tbody tr:hover {
+            background: #f5f5f5;
+            transition: background 0.2s;
+        }
+        
+        .schedule-table tbody tr {
+            border-left: 4px solid transparent;
+        }
+        
+        .schedule-table tbody tr:nth-child(odd) {
+            background: #fafafa;
+        }
+        
+        .schedule-table tbody tr:hover {
+            border-left-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .day-cell {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 120px;
+        }
+        
+        .period-cell {
+            text-align: center;
+            font-weight: 600;
+            color: #666;
+            min-width: 80px;
+        }
+        
+        .subject-cell {
+            font-weight: 500;
+            color: #333;
+            min-width: 150px;
+        }
+        
+        .faculty-cell {
+            color: #666;
+            min-width: 150px;
+        }
+        
+        .room-cell {
+            text-align: center;
+            background: #f0f4ff;
+            font-weight: 500;
+            color: #667eea;
+            border-radius: 4px;
+            min-width: 80px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .refresh-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+        
+        .info-banner {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #2e7d32;
+        }
+        
+        .info-banner strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .schedule-table {
+                font-size: 12px;
+            }
+            
+            .schedule-table th,
+            .schedule-table td {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .refresh-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📚 Class Timetable</h1>
+        <p>View the complete class schedule and get notified of any changes</p>
+    </div>
+    
+    <div class="content">
+        <div class="controls">
+            <div>
+                <span id="last-updated" style="color: #999; font-size: 14px;">Loading...</span>
+            </div>
+            <button class="refresh-btn" onclick="loadTimetable()">🔄 Refresh</button>
+        </div>
+        
+        <!-- Notifications Section -->
+        <div class="notifications" id="notifications-section" style="display: none;">
+            <h3 style="color: #333; margin-bottom: 15px;">📢 Important Updates</h3>
+            <div id="notifications-container"></div>
+        </div>
+        
+        <!-- Info Banner -->
+        <div class="info-banner">
+            <strong>✓ System Status: Active</strong>
+            The timetable is live and updates in real-time. Bookmark this page for quick access.
+        </div>
+        
+        <!-- Timetable Section -->
+        <div class="timetable">
+            <h2>Full Class Schedule</h2>
+            
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                Loading timetable...
+            </div>
+            
+            <table class="schedule-table" id="timetable-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Period</th>
+                        <th>Subject</th>
+                        <th>Faculty</th>
+                        <th>Room</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-list">
+                </tbody>
+            </table>
+            
+            <div id="empty-state" style="display: none;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <h3>No Timetable Available</h3>
+                    <p>The timetable will be published soon. Please check back later.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load timetable and notifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadTimetable();
+    loadNotifications();
+    // Refresh notifications every 30 seconds
+    setInterval(loadNotifications, 30000);
+    // Refresh timetable every 60 seconds
+    setInterval(loadTimetable, 60000);
+});
+
+function loadTimetable() {
+    fetch('/api/timetable')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('schedule-list');
+            const loadingDiv = document.getElementById('loading');
+            const tableDiv = document.getElementById('timetable-table');
+            const emptyStateDiv = document.getElementById('empty-state');
+            
+            tbody.innerHTML = '';
+            
+            if (Array.isArray(data) && data.length > 0) {
+                // Sort by day and period
+                const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                const sortedData = data.sort((a, b) => {
+                    const dayA = dayOrder.indexOf(a[1] || '');
+                    const dayB = dayOrder.indexOf(b[1] || '');
+                    if (dayA !== dayB) return dayA - dayB;
+                    return (a[2] || 0) - (b[2] || 0);
+                });
+                
+                sortedData.forEach(schedule => {
+                    const id = schedule[0];
+                    const day = schedule[1] || '-';
+                    const period = schedule[2] || '-';
+                    const subject = schedule[3] || '-';
+                    const faculty = schedule[4] || '-';
+                    const room = schedule[5] || '-';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="day-cell">${day}</td>
+                            <td class="period-cell">${period}</td>
+                            <td class="subject-cell">${subject}</td>
+                            <td class="faculty-cell">${faculty}</td>
+                            <td class="room-cell">${room}</td>
+                        </tr>
+                    `;
+                });
+                
+                loadingDiv.style.display = 'none';
+                tableDiv.style.display = 'table';
+                emptyStateDiv.style.display = 'none';
+            } else {
+                loadingDiv.style.display = 'none';
+                tableDiv.style.display = 'none';
+                emptyStateDiv.style.display = 'block';
+            }
+            
+            // Update last updated time
+            updateLastUpdated();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loading').innerHTML = '<p style="color: #e74c3c;">Error loading timetable. Please try again.</p>';
+        });
+}
+
+function loadNotifications() {
+    fetch('/notifications')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('notifications-container');
+            const section = document.getElementById('notifications-section');
+            
+            if (Array.isArray(data) && data.length > 0) {
+                container.innerHTML = '';
+                let newNotifications = 0;
+                
+                data.forEach((notif, index) => {
+                    const message = notif[1] || notif;
+                    const createdAt = notif[2] || null;
+                    const isNew = index < 2; // Treat recent as "new"
+                    const isImportant = message.toLowerCase().includes('emergency') || 
+                                       message.toLowerCase().includes('urgent') ||
+                                       message.toLowerCase().includes('change');
+                    
+                    const notificationClass = isNew ? 'new' : (isImportant ? 'important' : '');
+                    
+                    const timeStr = createdAt ? new Date(createdAt).toLocaleString() : 'Just now';
+                    
+                    container.innerHTML += `
+                        <div class="notification-item ${notificationClass}">
+                            <div class="notification-header">📌 Update</div>
+                            <div>${message}</div>
+                            <div class="notification-time">${timeStr}</div>
+                        </div>
+                    `;
+                    
+                    if (isNew) newNotifications++;
+                });
+                
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+        });
+}
+
+function updateLastUpdated() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('last-updated').textContent = `Last updated: ${timeStr}`;
+}
+
+// Optional: Add browser notification support
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+// Call this when user first visits
+if ('Notification' in window && Notification.permission === 'granted') {
+    // Timetable is already visible
+}
+</script>
+
+</body>
+</html>

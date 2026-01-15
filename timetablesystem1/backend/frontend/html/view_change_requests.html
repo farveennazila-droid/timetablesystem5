@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Change Requests Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .form-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .form-section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table thead {
+            background: #34495e;
+            color: white;
+        }
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table tbody tr:hover {
+            background: #f4f6f8;
+        }
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-approve {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-approve:hover {
+            background: #218838;
+        }
+        .btn-reject {
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-reject:hover {
+            background: #c82333;
+        }
+        .btn-back {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .btn-back:hover {
+            background: #2980b9;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .stat-card.pending {
+            border-top: 4px solid #f39c12;
+        }
+        .stat-card.approved {
+            border-top: 4px solid #27ae60;
+        }
+        .stat-card.rejected {
+            border-top: 4px solid #e74c3c;
+        }
+        .reason-text {
+            color: #555;
+            font-size: 13px;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Admin</h2>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/manage-faculty">Faculty</a>
+    <a href="/manage-subject">Subjects</a>
+    <a href="/manage-classroom">Rooms</a>
+    <a href="/view-change-requests" style="color: #3498db;">Change Requests</a>
+    <a href="#" onclick="logout(); return false;">Logout</a>
+</div>
+
+<div class="main">
+    <a href="/dashboard" class="btn-back">← Back to Dashboard</a>
+    
+    <div class="form-section">
+        <h1>Change Requests Management</h1>
+        <p>Review and manage all pending change requests from faculty and students</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-cards">
+        <div class="stat-card pending">
+            <div class="stat-label">Pending Requests</div>
+            <div class="stat-number" id="pending-count">0</div>
+        </div>
+        <div class="stat-card approved">
+            <div class="stat-label">Approved</div>
+            <div class="stat-number" id="approved-count">0</div>
+        </div>
+        <div class="stat-card rejected">
+            <div class="stat-label">Rejected</div>
+            <div class="stat-number" id="rejected-count">0</div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>📋 All Change Requests</h3>
+        <table id="request-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timetable ID</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="request-list">
+                <tr><td colspan="6" style="text-align: center; padding: 40px;">Loading change requests...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Load change requests on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadChangeRequests();
+});
+
+function loadChangeRequests() {
+    fetch('/change-requests')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('request-list');
+            tbody.innerHTML = '';
+            
+            let pendingCount = 0;
+            let approvedCount = 0;
+            let rejectedCount = 0;
+            
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(request => {
+                    const id = request[0];
+                    const timetable_id = request[1];
+                    const reason = request[2];
+                    const status = request[3] || 'Pending';
+                    const date = request[4] || '-';
+                    
+                    // Count statuses
+                    if (status.toLowerCase() === 'pending') pendingCount++;
+                    else if (status.toLowerCase() === 'approved') approvedCount++;
+                    else if (status.toLowerCase() === 'rejected') rejectedCount++;
+                    
+                    // Determine status badge class
+                    let statusClass = 'status-pending';
+                    let showActions = true;
+                    if (status.toLowerCase() === 'approved') {
+                        statusClass = 'status-approved';
+                        showActions = false;
+                    } else if (status.toLowerCase() === 'rejected') {
+                        statusClass = 'status-rejected';
+                        showActions = false;
+                    }
+                    
+                    const actionButtons = showActions ? `
+                        <div class="action-buttons">
+                            <button class="btn-approve" onclick="updateStatus(${id}, 'approved')">✓ Approve</button>
+                            <button class="btn-reject" onclick="updateStatus(${id}, 'rejected')">✗ Reject</button>
+                        </div>
+                    ` : '<span style="color: #999;">No action</span>';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>#${id}</strong></td>
+                            <td>${timetable_id}</td>
+                            <td><span class="reason-text">${reason}</span></td>
+                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td>${date}</td>
+                            <td>${actionButtons}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Update statistics
+                document.getElementById('pending-count').textContent = pendingCount;
+                document.getElementById('approved-count').textContent = approvedCount;
+                document.getElementById('rejected-count').textContent = rejectedCount;
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <p>📭 No change requests yet</p>
+                                <small>All change requests will appear here</small>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('request-list').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #e74c3c; padding: 20px;">Error loading requests</td></tr>';
+        });
+}
+
+function updateStatus(requestId, status) {
+    if (confirm(`Are you sure you want to ${status.toUpperCase()} this request?`)) {
+        fetch(`/api/change-request/${requestId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(`✓ Request has been ${status.toUpperCase()}ED\n\n✉️ Notification sent to faculty member`);
+                loadChangeRequests();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to update status'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating request status');
+        });
+    }
+}
+
+function logout() {
+    window.location.href = "/";
+}
+</script>
+
+</body>
+</html>

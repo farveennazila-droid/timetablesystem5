@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="console.error('Failed to load Chart.js')"></script>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Admin</h2>
+    <a href="#" onclick="showDashboard(); return false;">Dashboard</a>
+    <a href="#" onclick="showGenerateTimetable(); return false;">Generate Timetable</a>
+    <a href="/manage-faculty">Faculty</a>
+    <a href="/manage-subject">Subjects</a>
+    <a href="/manage-classroom">Rooms</a>
+    <a href="/view-change-requests">Change Requests</a>
+    <a href="#" onclick="logout(); return false;">Logout</a>
+</div>
+
+<div class="main">
+    <!-- Dashboard View -->
+    <div id="dashboard-view">
+        <h1>Dashboard</h1>
+
+        <div class="cards">
+            <div class="card">Faculties<br><b id="faculty-count">-</b></div>
+            <div class="card">Subjects<br><b id="subject-count">-</b></div>
+            <div class="card">Rooms<br><b id="room-count">-</b></div>
+            <div class="card">Timetables<br><b id="timetable-count">-</b></div>
+        </div>
+
+        <div class="section">
+            <h2>Analytics</h2>
+            <canvas id="chart"></canvas>
+        </div>
+
+        <div class="section">
+            <h2>Notifications</h2>
+            <ul id="notifications">
+                <li>⚠ Emergency reschedule requested</li>
+                <li>🔔 Faculty change request pending</li>
+                <li>✅ Timetable approved</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Generate Timetable View -->
+    <div id="timetable-view" style="display:none;">
+        <h1>Generate Timetable</h1>
+        <div class="section">
+            <label>Number of Days:</label>
+            <input type="number" id="days" min="1" max="7" value="5">
+            <br><br>
+            <label>Number of Periods:</label>
+            <input type="number" id="periods" min="1" max="10" value="6">
+            <br><br>
+            <button onclick="generateTimetable()" class="btn">Generate</button>
+            <button id="publish-btn" onclick="publishTimetable()" class="btn" style="margin-left:10px; display:none;">Publish Timetable</button>
+        </div>
+        <div id="output" class="section"></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: timetable-system
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DB_HOST
+        scope: build,runtime
+      - key: DB_USER
+        scope: build,runtime
+      - key: DB_PASSWORD
+        scope: build,runtime
+      - key: DB_NAME
+        scope: build,runtime
+      - key: DB_PORT
+        scope: build,runtime
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "False"
+
+  # Uncomment to add MySQL database
+  # - type: mysql
+  #   name: timetable-db
+  #   plan: free
+  #   ipAllowList: []

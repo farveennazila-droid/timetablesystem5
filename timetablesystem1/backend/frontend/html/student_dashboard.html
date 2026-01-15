@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .info-card {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .info-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .schedule-table thead {
+            background: #34495e;
+            color: white;
+        }
+        .schedule-table th, .schedule-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .schedule-table tbody tr:hover {
+            background: #f4f6f8;
+        }
+        .schedule-table tbody tr {
+            border-left: 4px solid #3498db;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .notification-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .notification-box.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+        .notification-box.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card.courses {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.classes {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stat-card.attendance {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Student</h2>
+    <a href="/student-dashboard" style="color: #3498db;">My Schedule</a>
+    <a href="#" onclick="logout(); return false;">Logout</a>
+</div>
+
+<div class="main">
+    <div class="info-card">
+        <h1>Student Dashboard</h1>
+        <p>Welcome! View your course schedule and academic information below.</p>
+    </div>
+
+    <!-- Stats Section -->
+    <div style="margin: 20px;">
+        <div class="stats-container">
+            <div class="stat-card courses">
+                <div class="stat-label">Enrolled Courses</div>
+                <div class="stat-number" id="courses-count">0</div>
+            </div>
+            <div class="stat-card classes">
+                <div class="stat-label">Classes This Week</div>
+                <div class="stat-number" id="classes-count">0</div>
+            </div>
+            <div class="stat-card attendance">
+                <div class="stat-label">Attendance Rate</div>
+                <div class="stat-number" id="attendance-count">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Schedule Section -->
+    <div class="info-card">
+        <h3>📅 Your Class Schedule</h3>
+        <table class="schedule-table">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th>Period</th>
+                    <th>Subject</th>
+                    <th>Faculty</th>
+                    <th>Room</th>
+                </tr>
+            </thead>
+            <tbody id="schedule-list">
+                <tr><td colspan="5" style="text-align: center; padding: 40px;">Loading schedule...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Announcements Section -->
+    <div class="info-card">
+        <h3>📢 Announcements</h3>
+        <div id="announcements-container">
+            <div class="notification-box success">
+                ✓ Welcome to the Timetable System! Your schedule is now available.
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Info Section -->
+    <div class="info-card">
+        <h3>ℹ️ Quick Info</h3>
+        <ul style="color: #666; line-height: 1.8;">
+            <li><strong>System:</strong> Timetable Management System</li>
+            <li><strong>Your Role:</strong> Student</li>
+            <li><strong>Status:</strong> <span style="color: #27ae60; font-weight: bold;">Active</span></li>
+            <li><strong>Last Sync:</strong> <span id="last-updated">Just now</span></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+// Load schedule on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadEnrollments();
+    loadSchedule();
+    loadAnnouncements();
+    
+    // Auto-refresh schedule every 2 seconds for real-time updates
+    setInterval(loadSchedule, 2000);
+    
+    // Auto-refresh announcements every 5 seconds
+    setInterval(loadAnnouncements, 5000);
+    
+    // Update last updated timestamp
+    updateTimestamp();
+    setInterval(updateTimestamp, 1000);
+});
+
+function updateTimestamp() {
+    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+}
+
+function loadEnrollments() {
+    fetch('/api/student/enrollments')
+        .then(res => res.json())
+        .then(data => {
+            enrolledSet = new Set(Array.isArray(data) ? data : []);
+            renderEnrolledCourses();
+        })
+        .catch(err => {
+            console.error('Error loading enrollments', err);
+        });
+}
+
+function renderEnrolledCourses() {
+    const containerId = 'enrolled-courses';
+    let container = document.getElementById(containerId);
+    if (!container) {
+        const section = document.createElement('div');
+        section.className = 'info-card';
+        section.innerHTML = `\n            <h3>🎓 Your Enrolled Courses</h3>\n            <div id="${containerId}">Loading...</div>\n        `;
+        document.querySelector('.main').insertBefore(section, document.querySelector('.info-card'));
+        container = document.getElementById(containerId);
+    }
+
+    if (enrolledSet.size === 0) {
+        container.innerHTML = '<div>No enrolled courses</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    enrolledSet.forEach(subj => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        div.style.alignItems = 'center';
+        div.style.padding = '8px 0';
+        div.innerHTML = `<div>${subj}</div><button class="btn-delete" onclick="unenroll('${subj.replace(/'/g, "\\'") }')">Unenroll</button>`;
+        container.appendChild(div);
+    });
+}
+
+function unenroll(subject) {
+    if (!confirm(`Unenroll from ${subject}?`)) return;
+    fetch('/api/student/enrollments', {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({subject: subject})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            enrolledSet.delete(subject);
+            renderEnrolledCourses();
+            loadSchedule();
+        } else {
+            alert('Failed to unenroll: ' + (data.message || ''));
+        }
+    })
+    .catch(err => { console.error(err); alert('Error unenrolling'); });
+}
+
+function loadSchedule() {
+    fetch('/api/timetable')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('schedule-list');
+            
+            let classCount = 0;
+            let courseSet = new Set();
+            let hasPublishedData = false;
+            
+            if (Array.isArray(data) && data.length > 0) {
+                // Filter only published timetables
+                const publishedData = data.filter(schedule => {
+                    const published = schedule[6];  // 7th element (index 6) is the published flag
+                    return published === 1 || published === true;
+                });
+                
+                if (publishedData.length > 0) {
+                    hasPublishedData = true;
+                    tbody.innerHTML = '';
+                    
+                    // Sort by day and period
+                    const sortedData = publishedData.sort((a, b) => {
+                        const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                        const dayA = dayOrder.indexOf(a[1] || '');
+                        const dayB = dayOrder.indexOf(b[1] || '');
+                        if (dayA !== dayB) return dayA - dayB;
+                        return (a[2] || 0) - (b[2] || 0);
+                    });
+                    
+                    sortedData.forEach(schedule => {
+                        const id = schedule[0];
+                        const day = schedule[1] || '-';
+                        const period = schedule[2] || '-';
+                        const subject = schedule[3] || '-';
+                        const faculty = schedule[4] || '-';
+                        const room = schedule[5] || '-';
+
+                        // If enrolledSet has entries, only show those subjects
+                        if (enrolledSet.size > 0 && !enrolledSet.has(subject)) {
+                            return; // skip this schedule row
+                        }
+
+                        classCount++;
+                        if (subject !== '-') courseSet.add(subject);
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><strong>${day}</strong></td>
+                                <td>${period}</td>
+                                <td>${subject}</td>
+                                <td>${faculty}</td>
+                                <td>${room}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+            
+            if (!hasPublishedData || classCount === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📭</div>
+                                <p>No schedule available yet</p>
+                                <small>Your schedule will appear here once it's published by the admin</small>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // Update stats
+            document.getElementById('classes-count').textContent = classCount;
+            document.getElementById('courses-count').textContent = courseSet.size;
+            document.getElementById('attendance-count').textContent = '85%';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('schedule-list').innerHTML = `
+                <tr><td colspan="5" style="text-align: center; color: #e74c3c; padding: 20px;">Error loading schedule</td></tr>
+            `;
+        });
+}
+
+function loadAnnouncements() {
+    fetch('/notifications')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('announcements-container');
+            
+            if (Array.isArray(data) && data.length > 0) {
+                container.innerHTML = '';
+                data.forEach(notif => {
+                    const message = notif[1] || notif;
+                    let notifClass = 'notification-box';
+                    
+                    // Color code different notification types
+                    if (message.includes('published')) {
+                        notifClass = 'notification-box success';
+                    } else if (message.includes('updated') || message.includes('changed')) {
+                        notifClass = 'notification-box warning';
+                    }
+                    
+                    container.innerHTML += `
+                        <div class="${notifClass}">
+                            ${message}
+                        </div>
+                    `;
+                });
+            } else {
+                container.innerHTML = `
+                    <div class="notification-box success">
+                        ✓ Welcome to the Timetable System! Your schedule will appear here once it's published.
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading announcements:', error);
+        });
+}
+
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '/';
+    }
+}
+
+let enrolledSet = new Set();
+</script>
+
+</body>
+</html>

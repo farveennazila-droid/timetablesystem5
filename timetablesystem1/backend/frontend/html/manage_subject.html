@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subject Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .form-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .form-section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table thead {
+            background: #34495e;
+            color: white;
+        }
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table tbody tr:hover {
+            background: #f4f6f8;
+        }
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+        .btn-back {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .btn-back:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>Admin</h2>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/manage-faculty">Faculty</a>
+    <a href="/manage-subject" style="color: #3498db;">Subjects</a>
+    <a href="/manage-classroom">Rooms</a>
+    <a href="#" onclick="logout(); return false;">Logout</a>
+</div>
+
+<div class="main">
+    <a href="/dashboard" class="btn-back">← Back to Dashboard</a>
+    
+    <div class="form-section">
+        <h1>Subject Management</h1>
+        
+        <h3>Add New Subject</h3>
+        <div id="message" class="message"></div>
+        <form onsubmit="addSubject(event)">
+            <div class="form-group">
+                <label>Subject Code:</label>
+                <input type="text" id="subject-code" placeholder="e.g., CS101" required>
+            </div>
+            <div class="form-group">
+                <label>Subject Name:</label>
+                <input type="text" id="subject-name" placeholder="e.g., Data Structures" required>
+            </div>
+            <div class="form-group">
+                <label>Semester:</label>
+                <select id="subject-semester" required>
+                    <option value="1" selected>Semester 1</option>
+                    <option value="2">Semester 2</option>
+                    <option value="3">Semester 3</option>
+                    <option value="4">Semester 4</option>
+                    <option value="5">Semester 5</option>
+                    <option value="6">Semester 6</option>
+                    <option value="7">Semester 7</option>
+                    <option value="8">Semester 8</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Add Subject</button>
+        </form>
+
+        <h3>Current Subjects</h3>
+        <table id="subject-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Semester</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="subject-list">
+                <tr><td colspan="5">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Load subject list on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSubjectList();
+});
+
+function loadSubjectList() {
+    fetch('/api/subject')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('subject-list');
+            tbody.innerHTML = '';
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(subject => {
+                    const id = subject[0];
+                    const code = subject[1];
+                    const name = subject[2];
+                    const semester = subject[4] || '-';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${id}</td>
+                            <td>${code}</td>
+                            <td>${name}</td>
+                            <td>${semester}</td>
+                            <td><button class="btn-delete" onclick="deleteSubject(${id})">Delete</button></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5">No subjects added yet</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('subject-list').innerHTML = '<tr><td colspan="5">Error loading subjects</td></tr>';
+        });
+}
+
+function addSubject(event) {
+    event.preventDefault();
+
+    const code = document.getElementById('subject-code').value.trim();
+    const name = document.getElementById('subject-name').value.trim();
+    const semester = document.getElementById('subject-semester').value.trim();
+
+    // Validate all fields are filled
+    if (!code || !name || !semester) {
+        const msgDiv = document.getElementById('message');
+        msgDiv.textContent = '✗ Error: All fields must be filled';
+        msgDiv.className = 'message error';
+        return;
+    }
+
+    fetch('/api/subject', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            subject_code: code,
+            subject_name: name,
+            semester: parseInt(semester)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const msgDiv = document.getElementById('message');
+        if (data.status === 'success') {
+            msgDiv.textContent = '✓ Subject added successfully!';
+            msgDiv.className = 'message success';
+            document.getElementById('subject-code').value = '';
+            document.getElementById('subject-name').value = '';
+            document.getElementById('subject-semester').value = '1';
+            loadSubjectList();
+        } else {
+            msgDiv.textContent = '✗ Error: ' + (data.message || 'Failed to add subject');
+            msgDiv.className = 'message error';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const msgDiv = document.getElementById('message');
+        msgDiv.textContent = '✗ Error adding subject';
+        msgDiv.className = 'message error';
+    });
+}
+
+function deleteSubject(id) {
+    if (confirm('Are you sure you want to delete this subject?')) {
+        fetch(`/api/subject/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadSubjectList();
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+}
+
+function logout() {
+    window.location.href = "/";
+}
+</script>
+
+</body>
+</html>

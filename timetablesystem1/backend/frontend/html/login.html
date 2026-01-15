@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login | Timetable Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .role-btn {
+            background: white;
+            border: 2px solid transparent;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .role-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .role-btn.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .role-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .role-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .role-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .login-box h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .login-btn:hover {
+            transform: scale(1.02);
+        }
+        
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .info-text {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        
+        .demo-creds {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #0c5460;
+        }
+        
+        .demo-creds strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📚 Timetable System</h1>
+        <p>Select your role to continue</p>
+    </div>
+    
+    <div class="role-selector" id="roleSelector">
+        <div class="role-btn" data-role="student" onclick="selectRole('student', this)">
+            <div class="role-icon">👨‍🎓</div>
+            <div class="role-name">Student</div>
+            <div class="role-desc">View your schedule</div>
+        </div>
+        <div class="role-btn" data-role="faculty" onclick="selectRole('faculty', this)">
+            <div class="role-icon">👨‍🏫</div>
+            <div class="role-name">Faculty</div>
+            <div class="role-desc">Manage classes</div>
+        </div>
+        <div class="role-btn" data-role="admin" onclick="selectRole('admin', this)">
+            <div class="role-icon">⚙️</div>
+            <div class="role-name">Admin</div>
+            <div class="role-desc">System control</div>
+        </div>
+    </div>
+
+    <div class="login-box">
+        <h2 id="loginTitle">Admin Login</h2>
+
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" placeholder="Enter username" autofocus>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+
+        <button class="login-btn" onclick="login()">Login</button>
+
+        <div id="error" class="error"></div>
+        
+        <div class="demo-creds">
+            <strong>Demo Credentials:</strong>
+            Student/Faculty/Admin: <br>
+            Username: <code>user</code> <br>
+            Password: <code>pass</code>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedRole = 'admin'; // Default role
+    
+    function selectRole(role, element) {
+        selectedRole = role;
+        
+        // Update active button
+        document.querySelectorAll('.role-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        element.classList.add('active');
+        
+        // Update login title
+        const titles = {
+            'student': '👨‍🎓 Student Login',
+            'faculty': '👨‍🏫 Faculty Login',
+            'admin': '⚙️ Admin Login'
+        };
+        document.getElementById('loginTitle').textContent = titles[role];
+        document.getElementById('error').textContent = '';
+        document.getElementById('error').classList.remove('show');
+    }
+    
+    function login() {
+        let username = document.getElementById("username").value.trim();
+        let password = document.getElementById("password").value.trim();
+        let errorDiv = document.getElementById("error");
+
+        if (!username || !password) {
+            errorDiv.textContent = "Please enter username and password";
+            errorDiv.classList.add('show');
+            return;
+        }
+
+        // Show loading state
+        errorDiv.textContent = "Logging in...";
+        errorDiv.classList.add('show');
+        errorDiv.style.background = '#d1ecf1';
+        errorDiv.style.color = '#0c5460';
+        errorDiv.style.borderColor = '#bee5eb';
+
+        fetch("/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+                role: selectedRole
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                // Redirect based on role
+                const redirects = {
+                    'student': '/student-dashboard',
+                    'faculty': '/faculty-dashboard',
+                    'admin': '/dashboard'
+                };
+                window.location.href = redirects[selectedRole];
+            } else {
+                errorDiv.textContent = data.message || "Invalid credentials";
+                errorDiv.classList.add('show');
+                errorDiv.style.background = '#f8d7da';
+                errorDiv.style.color = '#721c24';
+                errorDiv.style.borderColor = '#f5c6cb';
+            }
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+            errorDiv.textContent = "Connection error: " + error;
+            errorDiv.classList.add('show');
+            errorDiv.style.background = '#f8d7da';
+            errorDiv.style.color = '#721c24';
+            errorDiv.style.borderColor = '#f5c6cb';
+        });
+    }
+    
+    // Allow Enter key to login
+    document.getElementById('password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+    
+    // Set default active role
+    document.querySelector('[data-role="admin"]').classList.add('active');
+</script>
+
+</body>
+</html>

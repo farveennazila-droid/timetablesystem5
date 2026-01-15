@@ -1,0 +1,63 @@
+# GitHub Push Commands
+
+Run these commands in PowerShell in your project folder:
+
+```powershell
+# 1. Initialize git repository
+git init
+
+# 2. Add all files to staging (excluding .gitignore files)
+git add .
+
+# 3. Create first commit
+git commit -m "Initial commit: Complete timetable management system with real-time sync"
+
+# 4. Rename branch to main
+git branch -M main
+
+# 5. Add remote repository (replace USERNAME)
+git remote add origin https://github.com/YOUR_USERNAME/timetable-system.git
+
+# 6. Push to GitHub
+git push -u origin main
+```
+
+## Before Running These Commands:
+
+1. **Create GitHub Repository**:
+   - Go to github.com
+   - Click the **+** icon → **New repository**
+   - Name: `timetable-system`
+   - Choose **Public** or **Private**
+   - DO NOT initialize with README, .gitignore, or license
+   - Click **Create repository**
+
+2. **Verify .gitignore exists**:
+   - File: `.gitignore` in project root
+   - Should exclude: `.env`, `__pycache__/`, `.venv/`, etc.
+
+3. **Replace YOUR_USERNAME**:
+   - In the `git remote add` command above
+   - Example: `https://github.com/john_smith/timetable-system.git`
+
+## Verify Push Was Successful:
+
+```powershell
+git log --oneline
+git remote -v
+```
+
+You should see:
+- Your commit message
+- Remote URL pointing to GitHub
+
+## After Push - What Happens:
+
+- All files appear on GitHub (except `.env`, `__pycache__/`, etc.)
+- Your repo is now online
+- Others can clone it with: `git clone https://github.com/YOUR_USERNAME/timetable-system.git`
+- You can see it at: `https://github.com/YOUR_USERNAME/timetable-system`
+
+✅ Your system is now hosted on GitHub!
+
+Next: Follow [DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md) to deploy to a live server.
